@@ -555,12 +555,21 @@ async def get_playlists_from_spotify(spotify_session: spotipy.Spotify, config):
     print("Loading Spotify playlists")
     results = spotify_session.user_playlists(config["spotify"]["username"])
     exclude_list = set([x.split(":")[-1] for x in config.get("excluded_playlists", [])])
+
+    def owner_filter(p):
+        if config["owner"] == "self":
+            return p["owner"]["id"] == config["spotify"]["username"]
+        elif config["owner"] == "other":
+            return p["owner"]["id"] != config["spotify"]["username"]
+        else:
+            return True
+
     playlists.extend(
         [
             p
             for p in results["items"]
             # if p["owner"]["id"] == config["spotify"]["username"]
-            if p["id"] not in exclude_list
+            if p["id"] not in exclude_list and owner_filter(p)
         ]
     )
 
@@ -585,8 +594,8 @@ async def get_playlists_from_spotify(spotify_session: spotipy.Spotify, config):
                 [
                     p
                     for p in extra_result["items"]
-                    if p["owner"]["id"] == config["spotify"]["username"]
-                    and p["id"] not in exclude_list
+                    # if p["owner"]["id"] == config["spotify"]["username"]
+                    if p["id"] not in exclude_list and owner_filter(p)
                 ]
             )
     return playlists
